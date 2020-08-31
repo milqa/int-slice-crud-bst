@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -25,16 +24,9 @@ func insert(repo store.Store, log *zap.Logger) http.HandlerFunc {
 
 		vals := make([]int, 0, 30)
 
-		buf, err := ioutil.ReadAll(r.Body)
-		if err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&vals); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			logger.Errorf("cannot read bytes from body: %s", err.Error())
-			return
-		}
-
-		if err := json.Unmarshal(buf, &vals); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			logger.Errorf("cannot unmarshal body to vals = %s: %s", string(buf), err.Error())
+			logger.Errorf("cannot unmarshal body to vals: %s", err.Error())
 			return
 		}
 
@@ -45,7 +37,7 @@ func insert(repo store.Store, log *zap.Logger) http.HandlerFunc {
 		}
 
 		if err := intSliceService.Insert(vals...); err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(http.StatusInternalServerError)
 			logger.Errorf("cannot save vals = %v: %s", vals, err.Error())
 			return
 		}
@@ -80,7 +72,7 @@ func delete(repo store.Store, log *zap.Logger) http.HandlerFunc {
 			if errors.Is(err, store.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
-				w.WriteHeader(http.StatusBadRequest)
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 			logger.Errorf(
 				"cannot delete val = %v: %s", value, err.Error(),
@@ -119,7 +111,7 @@ func search(repo store.Store, log *zap.Logger) http.HandlerFunc {
 			if errors.Is(err, store.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
-				w.WriteHeader(http.StatusBadRequest)
+				w.WriteHeader(http.StatusInternalServerError)
 			}
 			logger.Errorf(
 				"cannot find val = %v: %s", value, err.Error(),
