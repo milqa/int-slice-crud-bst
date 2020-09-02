@@ -3,6 +3,7 @@ package bst
 import (
 	"errors"
 	"sync"
+	"time"
 )
 
 var (
@@ -18,11 +19,12 @@ type Note struct {
 }
 
 type BST struct {
-	mu   sync.Mutex
-	root *Note
+	mu     sync.Mutex
+	Logger *PrintfLogger
+	root   *Note
 }
 
-func NewBST() *BST {
+func NewBST(printf Printf) *BST {
 
 	bst := BST{
 		root: &Note{
@@ -31,6 +33,7 @@ func NewBST() *BST {
 			rightBranch: nil,
 			leftBranch:  nil,
 		},
+		Logger: NewPrintfLogger(printf),
 	}
 
 	bst.root.parent = &Note{
@@ -62,7 +65,11 @@ func (n *Note) findValue(address int) (interface{}, error) {
 func (c *BST) Find(address int) (interface{}, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.root.findValue(address)
+	c.Logger.beforeFind(address)
+	start := time.Now()
+	value, err := c.root.findValue(address)
+	c.Logger.afterFind(address, value, time.Since(start), err)
+	return value, err
 }
 
 func (n *Note) insertValue(address int, value interface{}) error {
@@ -106,13 +113,21 @@ func (n *Note) insertValue(address int, value interface{}) error {
 func (c *BST) Insert(address int, value interface{}) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.root.insertValue(address, value)
+	c.Logger.beforeInsert(address, value)
+	start := time.Now()
+	err := c.root.insertValue(address, value)
+	c.Logger.afterInsert(address, value, time.Since(start), err)
+	return err
 }
 
 func (c *BST) Delete(address int) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.root.deleteValue(address)
+	c.Logger.beforeDelete(address)
+	start := time.Now()
+	err := c.root.deleteValue(address)
+	c.Logger.afterDelete(address, time.Since(start), err)
+	return err
 }
 
 func (n *Note) deleteValue(address int) error {

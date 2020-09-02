@@ -30,7 +30,7 @@ func (s *Store) IntSlice() store.IntSliceRepository {
 
 	s.intSlice = &IntSliceRepository{
 		store: s,
-		bst:   bst.NewBST(),
+		bst:   bst.NewBST(s.logger.Sugar().Infof),
 	}
 
 	return s.intSlice

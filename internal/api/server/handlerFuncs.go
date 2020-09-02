@@ -6,53 +6,46 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/milQA/int-slice-crud-bst/internal/api/service"
 	"github.com/milQA/int-slice-crud-bst/internal/api/store"
 	"go.uber.org/zap"
 )
 
-func insert(repo store.Store, log *zap.Logger) http.HandlerFunc {
+func (s *Server) insert() http.HandlerFunc {
 
-	intSliceService := service.NewIntSliceService(repo)
+	type InputData struct {
+		Value int `json:"val"`
+	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := log.With(
+		logger := s.logger.With(
 			zap.String(
 				requestIDKey, r.Context().Value(RequestIDKey{}).(string),
 			),
 		).Sugar()
 
-		vals := make([]int, 0, 30)
+		var inputData InputData
 
-		if err := json.NewDecoder(r.Body).Decode(&vals); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&inputData); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			logger.Errorf("cannot unmarshal body to vals: %s", err.Error())
+			logger.Errorf("cannot unmarshal body: %s", err.Error())
 			return
 		}
 
-		if len(vals) != 30 {
-			w.WriteHeader(http.StatusBadRequest)
-			logger.Errorf("invalid vals len = %v", vals)
-			return
-		}
-
-		if err := intSliceService.Insert(vals...); err != nil {
+		if err := s.service.IntSlice().Insert(inputData.Value); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			logger.Errorf("cannot save vals = %v: %s", vals, err.Error())
+			logger.Errorf("cannot save val = %v: %s", inputData.Value, err.Error())
 			return
 		}
 
-		logger.Infof("save vals = %v", vals)
+		logger.Infof("save val = %v", inputData.Value)
 		w.WriteHeader(http.StatusOK)
 	})
 }
 
-func delete(repo store.Store, log *zap.Logger) http.HandlerFunc {
-
-	intSliceService := service.NewIntSliceService(repo)
+func (s *Server) delete() http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := log.With(
+		logger := s.logger.With(
 			zap.String(
 				requestIDKey, r.Context().Value(RequestIDKey{}).(string),
 			),
@@ -68,7 +61,7 @@ func delete(repo store.Store, log *zap.Logger) http.HandlerFunc {
 			return
 		}
 
-		if err := intSliceService.Delete(value); err != nil {
+		if err := s.service.IntSlice().Delete(value); err != nil {
 			if errors.Is(err, store.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
@@ -85,12 +78,10 @@ func delete(repo store.Store, log *zap.Logger) http.HandlerFunc {
 	})
 }
 
-func search(repo store.Store, log *zap.Logger) http.HandlerFunc {
-
-	intSliceService := service.NewIntSliceService(repo)
+func (s *Server) search() http.HandlerFunc {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := log.With(
+		logger := s.logger.With(
 			zap.String(
 				requestIDKey, r.Context().Value(RequestIDKey{}).(string),
 			),
@@ -106,7 +97,7 @@ func search(repo store.Store, log *zap.Logger) http.HandlerFunc {
 			return
 		}
 
-		answer, err := intSliceService.Search(value)
+		answer, err := s.service.IntSlice().Search(value)
 		if err != nil {
 			if errors.Is(err, store.ErrRecordNotFound) {
 				w.WriteHeader(http.StatusNotFound)

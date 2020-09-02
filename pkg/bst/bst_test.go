@@ -1,6 +1,7 @@
 package bst
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,12 +101,12 @@ var (
 )
 
 func TestNew(t *testing.T) {
-	got := NewBST()
+	got := NewBST(log.Printf)
 	assert.NotNil(t, got)
 }
 
 func TestInsert(t *testing.T) {
-	got := NewBST()
+	got := NewBST(log.Printf)
 	for _, tt := range branchInsertTests {
 		err := got.Insert(tt.in1, tt.in2)
 		assert.NoError(t, err)
@@ -113,7 +114,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	got := NewBST()
+	got := NewBST(log.Printf)
 	for _, tt := range branchInsertTests {
 		err := got.Insert(tt.in1, tt.in2)
 		assert.NoError(t, err)
@@ -127,7 +128,7 @@ func TestFind(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	got := NewBST()
+	got := NewBST(log.Printf)
 	for _, tt := range branchInsertTests {
 		err := got.Insert(tt.in1, tt.in2)
 		assert.NoError(t, err)

@@ -4,19 +4,19 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/milQA/int-slice-crud-bst/internal/api/store"
+	"github.com/milQA/int-slice-crud-bst/internal/api/service"
 	"go.uber.org/zap"
 )
 
 type (
 	Server struct {
-		router *chi.Mux
-		store  store.Store
-		logger *zap.Logger
+		router  *chi.Mux
+		service *service.Service
+		logger  *zap.Logger
 	}
 )
 
-func NewServer(log *zap.Logger, store store.Store) *Server {
+func NewServer(log *zap.Logger, service *service.Service) *Server {
 
 	router := chi.NewMux()
 
@@ -26,16 +26,16 @@ func NewServer(log *zap.Logger, store store.Store) *Server {
 		),
 	)
 
-	router.Use(LogRequestMiddleware(logger))
-	router.MethodFunc(http.MethodPost, "/insert", insert(store, logger))
-	router.MethodFunc(http.MethodDelete, "/delete", delete(store, logger))
-	router.MethodFunc(http.MethodGet, "/search", search(store, logger))
-
 	server := &Server{
-		router: router,
-		store:  store,
-		logger: logger,
+		router:  router,
+		service: service,
+		logger:  logger,
 	}
+
+	router.Use(LogRequestMiddleware(logger))
+	router.MethodFunc(http.MethodPost, "/insert", server.insert())
+	router.MethodFunc(http.MethodDelete, "/delete", server.delete())
+	router.MethodFunc(http.MethodGet, "/search", server.search())
 
 	return server
 }
